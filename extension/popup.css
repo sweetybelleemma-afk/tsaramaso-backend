@@ -1,0 +1,130 @@
+:root {
+    --bg-void: #0a0e16;
+    --panel: rgba(20, 26, 38, 0.75);
+    --panel-border: rgba(255, 255, 255, 0.07);
+    --text-primary: #eef2f7;
+    --text-muted: #7c8797;
+    --accent: #f5a623;
+
+    --c-acquisition: #7c8797;
+    --c-froide: #5b9cf6;
+    --c-equilibree: #3ddc8a;
+    --c-chaude: #ff9d3d;
+    --c-surchauffee: #ff5c72;
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+
+body {
+    font-family: 'Space Grotesk', -apple-system, BlinkMacSystemFont, sans-serif;
+    background:
+        radial-gradient(circle at 15% -10%, rgba(245, 166, 35, 0.08), transparent 45%),
+        var(--bg-void);
+    color: var(--text-primary);
+    display: flex;
+    justify-content: center;
+    min-height: 100vh;
+}
+
+.app-container { width: 100%; max-width: 480px; padding: 18px; display: flex; flex-direction: column; gap: 14px; }
+
+/* --- CORRECTION ICI : Ajout d'un espacement entre les sections --- */
+main {
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+    width: 100%;
+}
+
+/* Header */
+.header { display: flex; align-items: center; gap: 12px; padding-bottom: 12px; border-bottom: 1px solid var(--panel-border); }
+.logo img { display: block; border-radius: 8px; background: rgba(255,255,255,0.04); }
+.title-container h1 { font-size: 18px; font-weight: 700; letter-spacing: 0.01em; }
+.title-container h1 .accent { color: var(--accent); }
+.version { font-size: 10.5px; color: var(--text-muted); font-weight: 500; letter-spacing: 0.02em; }
+
+/* Cartes */
+.card {
+    background: var(--panel);
+    border: 1px solid var(--panel-border);
+    border-radius: 18px;
+    padding: 18px;
+    backdrop-filter: blur(6px);
+}
+
+/* Cadran (signature visuelle) */
+.dial-card { display: flex; justify-content: center; padding: 22px 18px; }
+.dial { position: relative; width: 148px; height: 148px; }
+.dial-svg { width: 100%; height: 100%; transform: rotate(-90deg); }
+.dial-track { stroke: rgba(255, 255, 255, 0.08); }
+.dial-fill { stroke: var(--c-acquisition); stroke-linecap: round; transition: stroke-dashoffset 0.6s ease, stroke 0.4s ease; }
+.dial-center {
+    position: absolute; inset: 0;
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    gap: 4px; text-align: center;
+}
+.etat-badge { font-size: 15px; font-weight: 700; letter-spacing: 0.01em; color: var(--text-primary); transition: color 0.4s ease; }
+.etat-froide { color: var(--c-froide); }
+.etat-equilibree { color: var(--c-equilibree); }
+.etat-chaude { color: var(--c-chaude); }
+.etat-surchauffee { color: var(--c-surchauffee); }
+.etat-acquisition { color: var(--c-acquisition); }
+.vr-readout { font-family: 'JetBrains Mono', ui-monospace, monospace; font-size: 11px; font-weight: 500; color: var(--text-muted); letter-spacing: 0.03em; }
+
+/* Anneau de scan tournant pendant l'acquisition */
+.dial.scanning::before {
+    content: "";
+    position: absolute; inset: -7px;
+    border-radius: 50%;
+    border: 1px dashed rgba(245, 166, 35, 0.35);
+    animation: tsr-spin 4.5s linear infinite;
+}
+@keyframes tsr-spin { to { transform: rotate(360deg); } }
+
+/* Carte action */
+.action-card { display: flex; flex-direction: column; align-items: center; gap: 11px; text-align: center; }
+.instruction { font-size: 12.5px; color: #cbd5e1; font-weight: 500; }
+.facultatif { font-size: 10.5px; color: var(--text-muted); }
+
+.btn-primary {
+    display: flex; align-items: center; justify-content: center;
+    width: 100%;
+    background: linear-gradient(135deg, var(--accent) 0%, #d88a12 100%);
+    color: #171208;
+    padding: 13px 20px;
+    border: none;
+    border-radius: 12px;
+    font-family: 'Space Grotesk', sans-serif;
+    font-size: 14px;
+    font-weight: 700;
+    letter-spacing: 0.01em;
+    cursor: pointer;
+    box-shadow: 0 6px 14px rgba(245, 166, 35, 0.22);
+}
+.status-badge { background: rgba(255,255,255,0.04); padding: 7px 14px; border-radius: 8px; font-size: 12px; font-weight: 600; }
+.status-success { color: var(--c-equilibree) !important; }
+.status-error { color: var(--c-surchauffee) !important; }
+.status-loading { color: var(--accent) !important; }
+
+/* Historique */
+.card-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 13px; }
+.card-header h2 { font-size: 13px; font-weight: 600; color: var(--text-primary); letter-spacing: 0.01em; }
+.badge { background: rgba(255,255,255,0.06); color: var(--text-muted); font-size: 10px; padding: 3px 8px; border-radius: 6px; font-weight: 600; }
+.empty-state { text-align: center; color: var(--text-muted); font-size: 12px; width: 100%; padding: 18px 0; }
+.history-grid { display: flex; flex-wrap: wrap; gap: 6px; }
+.pill {
+    padding: 4px 9px;
+    border-radius: 6px;
+    font-size: 11.5px;
+    font-weight: 600;
+    font-family: 'JetBrains Mono', ui-monospace, monospace;
+    background: rgba(255,255,255,0.04);
+    border: 1px solid rgba(255,255,255,0.06);
+    border-left: 2px solid transparent;
+}
+.bg-bleu   { color: var(--c-froide);      border-left-color: var(--c-froide); }
+.bg-violet { color: #b98cf7;              border-left-color: #b98cf7; }
+.bg-rose   { color: #ff7bb0;              border-left-color: #ff7bb0; }
+.bg-vert   { color: var(--c-equilibree);  border-left-color: var(--c-equilibree); }
+
+.hidden { display: none !important; }

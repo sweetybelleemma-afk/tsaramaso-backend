@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=JetBrains+Mono:wght@500;600&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="popup.css">
+    <title>Tsaramaso IA</title>
+</head>
+<body>
+    <div class="app-container">
+        <header class="header">
+            <div class="logo"><img src="icon.png" width="30" height="30"></div>
+            <div class="title-container">
+                <h1>Tsaramaso <span class="accent">IA</span></h1>
+                <span class="version">Analyseur de fenêtre · v5.0</span>
+            </div>
+        </header>
+
+        <main>
+            <!-- Cadran : type de fenêtre + Affluence en dessous -->
+            <section class="card dial-card" style="flex-direction: column; align-items: center; gap: 18px;">
+                <div id="dial" class="dial">
+                    <svg viewBox="0 0 120 120" class="dial-svg">
+                        <circle class="dial-track" cx="60" cy="60" r="52" fill="none" stroke-width="7"></circle>
+                        <circle id="dialFill" class="dial-fill" cx="60" cy="60" r="52" fill="none" stroke-width="7"
+                                stroke-dasharray="326.7" stroke-dashoffset="326.7"></circle>
+                    </svg>
+                    <div class="dial-center">
+                        <span id="windowState" class="etat-badge">Acquisition</span>
+                        <span id="vrReadout" class="vr-readout">0 / 20</span>
+                    </div>
+                </div>
+
+                <!-- Affluence : Proprement placée en dessous du rond -->
+                <div id="affReadout" style="font-size: 11.5px; font-weight: 600; color: #7c8797; background: rgba(255,255,255,0.03); padding: 7px 16px; border-radius: 8px; text-align: center; border: 1px solid rgba(255,255,255,0.05); width: 100%;">
+                    Affluence : En attente
+                </div>
+            </section>
+
+            <!-- Aspiration de l'historique -->
+            <section class="card action-card">
+                <p class="instruction">Ouvrez le panneau d'historique dans le jeu, puis lancez la lecture.</p>
+
+                <button id="btnAspirer" class="btn-primary">
+                    <span class="text">Lire l'historique du jeu</span>
+                </button>
+
+                <p class="facultatif">Facultatif — sans ça, l'analyse démarre après 20 tours en direct.</p>
+
+                <div id="statusContainer" class="status-badge hidden">
+                    <span id="statusMsg"></span>
+                </div>
+            </section>
+            
+            <!-- Signal d'Entrée -->
+            <section class="card action-card hidden" id="signalContainer" style="border-color: rgba(245, 166, 35, 0.4);">
+                <p class="instruction">Signal d'Élite Détecté</p>
+                <div class="status-badge" style="background: rgba(245, 166, 35, 0.1); width: 100%; padding: 10px;">
+                    <span id="signalName" style="color: var(--accent); font-weight: 700; font-size: 14px;"></span><br>
+                    <span id="signalCible" class="facultatif" style="color: #eef2f7; display: block; margin-top: 4px;"></span>
+                </div>
+            </section>
+
+            <!-- Historique -->
+            <section class="card history-card">
+                <div class="card-header">
+                    <h2>Derniers tours</h2>
+                    <span class="badge">40 max</span>
+                </div>
+                <div class="card-body">
+                    <div id="historyGrid" class="history-grid">
+                        <div id="emptyState" class="empty-state">
+                            En attente de données…
+                        </div>
+                    </div>
+                </div>
+            </section>
+        </main>
+    </div>
+    <script src="popup.js"></script>
+</body>
+</html>

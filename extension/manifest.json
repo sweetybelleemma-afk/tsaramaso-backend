@@ -1,0 +1,35 @@
+{
+  "manifest_version": 3,
+  "name": "Tsaramaso IA",
+  "description": "Analyseur Aviator",
+  "version": "5.0",
+  "permissions": [
+    "storage"
+  ],
+  "host_permissions": [
+    "http://127.0.0.1:5000/*"
+  ],
+  "web_accessible_resources": [
+    {
+      "resources": ["notification.mp3"],
+      "matches": ["<all_urls>"]
+    }
+  ],
+  "icons": {
+    "128": "icon.png"
+  },
+  "background": {
+    "service_worker": "background.js"
+  },
+  "action": {
+    "default_popup": "popup.html",
+    "default_icon": "icon.png"
+  },
+  "content_scripts": [
+    {
+      "matches": ["<all_urls>"],
+      "js": ["content.js"],
+      "all_frames": true
+    }
+  ]
+}
