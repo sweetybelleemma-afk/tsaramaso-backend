@@ -1,5 +1,5 @@
 """
-Serveur API — Tsaramaso V5 Final (Multi-Utilisateurs via IP + Anti-Veille)
+Serveur API — Tsaramaso V5 Final (Anti-Chevauchement HUD + Render IP/Anti-Veille)
 """
 
 from flask import Flask, request, jsonify
@@ -18,7 +18,7 @@ AFFLUENCE_THRESHOLD = 3300
 AFFLUENCE_SAFETY_THRESHOLD = 4000
 
 # =====================================================================
-# CLASSE WINDOWTRACKER INTACTE
+# CLASSE WINDOWTRACKER
 # =====================================================================
 class WindowTracker:
     def __init__(self):
@@ -62,7 +62,7 @@ class WindowTracker:
         return f"📡 Fenêtre : {self.last_window_class} ({vr_count}/{LOOKBACK} VR)", self.last_window_class, vr_count, None
 
 # =====================================================================
-# GESTIONNAIRE D'ÉTAT DES PARIS (BetTracker)
+# GESTIONNAIRE D'ÉTAT DES PARIS (Permet le chevauchement)
 # =====================================================================
 class BetTracker:
     def __init__(self):
@@ -71,48 +71,51 @@ class BetTracker:
         self.dernier_signal = None
 
     def update(self, cote: float, manager, type_fenetre: str, historique: list):
-        vient_de_terminer = False
+        statut_fin = ""
+        
+        # 1. Résolution du pari en cours
         if self.phase > 0:
             if cote >= 3.00:
                 self.phase = 0
-                vient_de_terminer = True
-                self.message_actuel = "Validé ✔️"
+                statut_fin = "Validé ✔️"
             else:
                 if self.phase == 1:
                     self.phase = 2
                     self.message_actuel = "2ème Entrée"
+                    return self.message_actuel, statut_fin, self.dernier_signal
                 elif self.phase == 2:
                     self.phase = 3
                     self.message_actuel = "3ème Entrée"
+                    return self.message_actuel, statut_fin, self.dernier_signal
                 elif self.phase == 3:
                     self.phase = 0
-                    vient_de_terminer = True
-                    self.message_actuel = "Échec ❌️"
+                    statut_fin = "Échec ❌️"
         
+        # 2. Chercher un nouveau signal
         signal = manager.evaluer_historique(type_fenetre, historique)
         
-        if signal and self.phase == 0 and not vient_de_terminer:
+        # 3. Lancer un nouveau pari si possible
+        # La phase étant à 0 (si validé ou échoué à l'instant), on peut relancer de suite !
+        msg_signal = ""
+        if signal and self.phase == 0:
             self.phase = 1
             self.dernier_signal = signal
             self.message_actuel = "1ère Entrée"
-        
-        if vient_de_terminer:
-            return self.message_actuel, self.dernier_signal
-        if self.phase == 0:
+            msg_signal = self.message_actuel
+        elif self.phase == 0:
             self.message_actuel = ""
             self.dernier_signal = None
             
-        return self.message_actuel, self.dernier_signal
+        return msg_signal, statut_fin, self.dernier_signal
 
 # =====================================================================
-# GESTIONNAIRE DE SESSIONS MULTI-UTILISATEURS
+# SESSIONS MULTI-UTILISATEURS
 # =====================================================================
 class SessionManager:
     def __init__(self):
         self.sessions = {}
 
     def get_session(self, ip_address):
-        # Créer une nouvelle session si l'utilisateur n'existe pas
         if ip_address not in self.sessions:
             self.sessions[ip_address] = {
                 "tracker": WindowTracker(),
@@ -122,8 +125,6 @@ class SessionManager:
             }
         else:
             self.sessions[ip_address]["last_active"] = time.time()
-            
-        # Nettoyage automatique des sessions inactives depuis plus de 12 heures
         self.cleanup()
         return self.sessions[ip_address]
         
@@ -137,7 +138,6 @@ manager_strategies = StrategyManager()
 session_manager = SessionManager()
 
 def get_client_ip():
-    """Récupère l'IP réelle du joueur (supporte le proxy Render)"""
     if request.headers.get('X-Forwarded-For'):
         return request.headers.get('X-Forwarded-For').split(',')[0].strip()
     return request.remote_addr
@@ -152,7 +152,6 @@ def init_historique():
         return jsonify({"success": False, "error": "Pas assez de données."})
 
     ip = get_client_ip()
-    # On écrase l'ancienne session pour faire un vrai reset
     session_manager.sessions[ip] = {
         "tracker": WindowTracker(),
         "bet_tracker": BetTracker(),
@@ -164,13 +163,13 @@ def init_historique():
     ordonnee = donnees[:40][::-1]
     historique_construction = []
     texte_fen, etat, vr_count, aff = "⚪ Acquisition (0/20)", "Acquisition", 0, None
-    msg_signal, obj_signal = "", None
+    msg_signal, statut_fin, obj_signal = "", "", None
     
     for m in ordonnee:
         cote_val = float(m)
         historique_construction.append(cote_val)
         texte_fen, etat, vr_count, aff = session["tracker"].update(cote_val)
-        msg_signal, obj_signal = session["bet_tracker"].update(cote_val, manager_strategies, etat, historique_construction)
+        msg_signal, statut_fin, obj_signal = session["bet_tracker"].update(cote_val, manager_strategies, etat, historique_construction)
 
     session["historique_affichage"] = ordonnee
 
@@ -182,6 +181,7 @@ def init_historique():
         "vr_count": vr_count,
         "affluence": aff,
         "signal_text": msg_signal,
+        "status_text": statut_fin,
         "signal_data": obj_signal
     })
 
@@ -204,7 +204,7 @@ def nouveau_tour():
         session["historique_affichage"].pop(0)
 
     texte_fen, etat, vr_count, aff = session["tracker"].update(cote, participants)
-    msg_signal, obj_signal = session["bet_tracker"].update(cote, manager_strategies, etat, session["historique_affichage"])
+    msg_signal, statut_fin, obj_signal = session["bet_tracker"].update(cote, manager_strategies, etat, session["historique_affichage"])
 
     return jsonify({
         "success": True,
@@ -214,6 +214,7 @@ def nouveau_tour():
         "vr_count": vr_count,
         "affluence": aff,
         "signal_text": msg_signal,
+        "status_text": statut_fin,
         "signal_data": obj_signal
     })
 
@@ -230,33 +231,27 @@ def etat():
         "vr_count": vr_count,
         "affluence": aff,
         "signal_text": session["bet_tracker"].message_actuel,
+        "status_text": "", # Le statut est éphémère
         "signal_data": session["bet_tracker"].dernier_signal
     })
 
 # =====================================================================
-# SYSTÈME ANTI-VEILLE (RENDER)
+# ANTI-VEILLE RENDER
 # =====================================================================
 @app.route('/ping', methods=['GET'])
 def ping():
-    """Route minimaliste pour garder le serveur éveillé."""
     return jsonify({"status": "actif", "message": "Serveur réveillé !"})
 
 def anti_veille():
-    """S'auto-ping toutes les 14 minutes pour empêcher Render de dormir."""
     while True:
-        time.sleep(840)  # 14 minutes = 840 secondes
+        time.sleep(840) 
         try:
-            # Assure-toi que cette URL correspond exactement à celle de ton application Render
             urllib.request.urlopen("https://tsaramaso-backend.onrender.com/ping")
-            print("🔄 Anti-veille : Ping automatique envoyé avec succès.")
+            print("🔄 Anti-veille : Ping envoyé avec succès.")
         except Exception as e:
-            print(f"⚠️ Anti-veille erreur : {e}")
+            pass
 
-# Lancement du thread anti-veille en arrière-plan
 threading.Thread(target=anti_veille, daemon=True).start()
 
-# =====================================================================
-# LANCEMENT DU SERVEUR
-# =====================================================================
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=5000, debug=False)
