@@ -1,11 +1,13 @@
 """
-Serveur API — Tsaramaso V5 (Multi-Utilisateurs via IP)
+Serveur API — Tsaramaso V5 Final (Multi-Utilisateurs via IP + Anti-Veille)
 """
 
 from flask import Flask, request, jsonify
 from flask_cors import CORS
 from collections import deque
 import time
+import threading
+import urllib.request
 from core.strategy_manager import StrategyManager
 
 app = Flask(__name__)
@@ -103,7 +105,7 @@ class BetTracker:
         return self.message_actuel, self.dernier_signal
 
 # =====================================================================
-# NOUVEAU : GESTIONNAIRE DE SESSIONS MULTI-UTILISATEURS
+# GESTIONNAIRE DE SESSIONS MULTI-UTILISATEURS
 # =====================================================================
 class SessionManager:
     def __init__(self):
@@ -231,5 +233,30 @@ def etat():
         "signal_data": session["bet_tracker"].dernier_signal
     })
 
+# =====================================================================
+# SYSTÈME ANTI-VEILLE (RENDER)
+# =====================================================================
+@app.route('/ping', methods=['GET'])
+def ping():
+    """Route minimaliste pour garder le serveur éveillé."""
+    return jsonify({"status": "actif", "message": "Serveur réveillé !"})
+
+def anti_veille():
+    """S'auto-ping toutes les 14 minutes pour empêcher Render de dormir."""
+    while True:
+        time.sleep(840)  # 14 minutes = 840 secondes
+        try:
+            # Assure-toi que cette URL correspond exactement à celle de ton application Render
+            urllib.request.urlopen("https://tsaramaso-backend.onrender.com/ping")
+            print("🔄 Anti-veille : Ping automatique envoyé avec succès.")
+        except Exception as e:
+            print(f"⚠️ Anti-veille erreur : {e}")
+
+# Lancement du thread anti-veille en arrière-plan
+threading.Thread(target=anti_veille, daemon=True).start()
+
+# =====================================================================
+# LANCEMENT DU SERVEUR
+# =====================================================================
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=5000, debug=False)
